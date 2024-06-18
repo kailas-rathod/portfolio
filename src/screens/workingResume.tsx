@@ -1,5 +1,3 @@
-// App.tsx
-
 import React, {useState, useEffect} from 'react';
 import {
   ScrollView,
@@ -13,8 +11,6 @@ import {
 import {Button, Text, Avatar, Card, Title, Paragraph} from 'react-native-paper';
 import Realm from 'realm';
 import {launchImageLibrary} from 'react-native-image-picker';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
 
 // Realm schema definitions
 const ResumeSchema = {
@@ -78,8 +74,7 @@ const realm = new Realm({
   schemaVersion: 1,
 });
 
-// Home screen component
-const HomeScreen = ({navigation}) => {
+const App = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -153,7 +148,10 @@ const HomeScreen = ({navigation}) => {
   };
 
   const editResume = (resume: any) => {
-    navigation.navigate('EditResume', {resume});
+    // Placeholder for edit functionality
+    // You can implement navigation or modal for editing resume details
+    // Example: navigation.navigate('EditResume', { resume });
+    Alert.alert('Edit Resume', 'Editing functionality to be implemented.');
   };
 
   const pickImage = async () => {
@@ -356,104 +354,6 @@ const HomeScreen = ({navigation}) => {
         }
       })}
     </ScrollView>
-  );
-};
-
-// Edit resume screen component
-const EditResumeScreen = ({route, navigation}) => {
-  const {resume} = route.params;
-
-  const [editedName, setEditedName] = useState(resume.name);
-  const [editedEmail, setEditedEmail] = useState(resume.email);
-  const [editedPhone, setEditedPhone] = useState(resume.phone);
-  const [editedProfilePhoto, setEditedProfilePhoto] = useState(
-    resume.profilePhoto,
-  );
-  const [editedSummary, setEditedSummary] = useState(resume.summary);
-  const [editedSkills, setEditedSkills] = useState(resume.skills);
-
-  const saveChanges = () => {
-    realm.write(() => {
-      resume.name = editedName;
-      resume.email = editedEmail;
-      resume.phone = editedPhone;
-      resume.profilePhoto = editedProfilePhoto;
-      resume.summary = editedSummary;
-      resume.skills = editedSkills;
-    });
-
-    navigation.goBack();
-  };
-
-  const pickImage = async () => {
-    let result = await launchImageLibrary({
-      mediaType: 'photo',
-      includeBase64: true,
-    });
-
-    if (!result.didCancel && result.assets && result.assets[0].uri) {
-      setEditedProfilePhoto(result.assets[0].uri);
-    }
-  };
-
-  return (
-    <ScrollView style={styles.container}>
-      {/* Input fields and buttons */}
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={editedName}
-        onChangeText={setEditedName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={editedEmail}
-        onChangeText={setEditedEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone"
-        value={editedPhone}
-        onChangeText={setEditedPhone}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Summary"
-        value={editedSummary}
-        onChangeText={setEditedSummary}
-        multiline
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Skills"
-        value={editedSkills}
-        onChangeText={setEditedSkills}
-        multiline
-      />
-      <Button mode="outlined" onPress={pickImage}>
-        Pick a Profile Photo
-      </Button>
-      {editedProfilePhoto ? (
-        <Image source={{uri: editedProfilePhoto}} style={styles.profilePhoto} />
-      ) : null}
-      <Button mode="contained" onPress={saveChanges}>
-        Save Changes
-      </Button>
-    </ScrollView>
-  );
-};
-
-const Stack = createStackNavigator();
-
-const App = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="EditResume" component={EditResumeScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
   );
 };
 

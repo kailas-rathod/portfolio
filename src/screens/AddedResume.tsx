@@ -1,6 +1,4 @@
-// App.tsx
-
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   ScrollView,
   TextInput,
@@ -8,13 +6,10 @@ import {
   FlatList,
   StyleSheet,
   View,
-  Alert,
 } from 'react-native';
 import {Button, Text, Avatar, Card, Title, Paragraph} from 'react-native-paper';
 import Realm from 'realm';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
+import ImagePicker, {launchImageLibrary} from 'react-native-image-picker';
 
 // Realm schema definitions
 const ResumeSchema = {
@@ -78,23 +73,19 @@ const realm = new Realm({
   schemaVersion: 1,
 });
 
-// Home screen component
-const HomeScreen = ({navigation}) => {
+// Define AddedResume component
+const AddedResume = () => {
+  // State variables using useState hook
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
   const [summary, setSummary] = useState('');
   const [skills, setSkills] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
-  const [resumes, setResumes] = useState<Realm.Results<any>>();
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [resumes, setResumes] = useState(realm.objects('Resume'));
 
-  // Fetch resumes from Realm on component mount
-  useEffect(() => {
-    const allResumes = realm.objects('Resume');
-    setResumes(allResumes);
-  }, []);
-
+  // Function to add a new resume
   const addResume = () => {
     realm.write(() => {
       realm.create('Resume', {
@@ -112,11 +103,7 @@ const HomeScreen = ({navigation}) => {
       });
     });
 
-    clearFields();
-    fetchResumes();
-  };
-
-  const clearFields = () => {
+    // Clear input fields after adding resume
     setName('');
     setEmail('');
     setPhone('');
@@ -124,36 +111,7 @@ const HomeScreen = ({navigation}) => {
     setSummary('');
     setSkills('');
     setSelectedTemplate(null);
-  };
-
-  const fetchResumes = () => {
-    const allResumes = realm.objects('Resume');
-    setResumes(allResumes);
-  };
-
-  const deleteResume = (resume: any) => {
-    Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this resume?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          onPress: () => {
-            realm.write(() => {
-              realm.delete(resume);
-            });
-            fetchResumes();
-          },
-          style: 'destructive',
-        },
-      ],
-      {cancelable: true},
-    );
-  };
-
-  const editResume = (resume: any) => {
-    navigation.navigate('EditResume', {resume});
+    setResumes(realm.objects('Resume')); // Update resumes list
   };
 
   const pickImage = async () => {
@@ -167,7 +125,8 @@ const HomeScreen = ({navigation}) => {
     }
   };
 
-  const Template1 = ({resume}: {resume: any}) => (
+  // Template 1 component
+  const Template1 = ({resume}) => (
     <Card style={styles.card}>
       <Card.Title title="Template 1" />
       <Card.Content>
@@ -218,14 +177,11 @@ const HomeScreen = ({navigation}) => {
           )}
         />
       </Card.Content>
-      <Card.Actions>
-        <Button onPress={() => deleteResume(resume)}>Delete</Button>
-        <Button onPress={() => editResume(resume)}>Edit</Button>
-      </Card.Actions>
     </Card>
   );
 
-  const Template2 = ({resume}: {resume: any}) => (
+  // Template 2 component
+  const Template2 = ({resume}) => (
     <Card style={styles.card}>
       <Card.Title title="Template 2" />
       <Card.Content>
@@ -276,16 +232,11 @@ const HomeScreen = ({navigation}) => {
           )}
         />
       </Card.Content>
-      <Card.Actions>
-        <Button onPress={() => deleteResume(resume)}>Delete</Button>
-        <Button onPress={() => editResume(resume)}>Edit</Button>
-      </Card.Actions>
     </Card>
   );
 
   return (
     <ScrollView style={styles.container}>
-      {/* Input fields and buttons */}
       <TextInput
         style={styles.input}
         placeholder="Name"
@@ -345,7 +296,7 @@ const HomeScreen = ({navigation}) => {
       </Button>
 
       {/* Display resumes */}
-      {resumes?.map(resume => {
+      {resumes.map(resume => {
         switch (resume.templateId) {
           case 1:
             return <Template1 key={resume._id} resume={resume} />;
@@ -356,104 +307,6 @@ const HomeScreen = ({navigation}) => {
         }
       })}
     </ScrollView>
-  );
-};
-
-// Edit resume screen component
-const EditResumeScreen = ({route, navigation}) => {
-  const {resume} = route.params;
-
-  const [editedName, setEditedName] = useState(resume.name);
-  const [editedEmail, setEditedEmail] = useState(resume.email);
-  const [editedPhone, setEditedPhone] = useState(resume.phone);
-  const [editedProfilePhoto, setEditedProfilePhoto] = useState(
-    resume.profilePhoto,
-  );
-  const [editedSummary, setEditedSummary] = useState(resume.summary);
-  const [editedSkills, setEditedSkills] = useState(resume.skills);
-
-  const saveChanges = () => {
-    realm.write(() => {
-      resume.name = editedName;
-      resume.email = editedEmail;
-      resume.phone = editedPhone;
-      resume.profilePhoto = editedProfilePhoto;
-      resume.summary = editedSummary;
-      resume.skills = editedSkills;
-    });
-
-    navigation.goBack();
-  };
-
-  const pickImage = async () => {
-    let result = await launchImageLibrary({
-      mediaType: 'photo',
-      includeBase64: true,
-    });
-
-    if (!result.didCancel && result.assets && result.assets[0].uri) {
-      setEditedProfilePhoto(result.assets[0].uri);
-    }
-  };
-
-  return (
-    <ScrollView style={styles.container}>
-      {/* Input fields and buttons */}
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={editedName}
-        onChangeText={setEditedName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={editedEmail}
-        onChangeText={setEditedEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone"
-        value={editedPhone}
-        onChangeText={setEditedPhone}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Summary"
-        value={editedSummary}
-        onChangeText={setEditedSummary}
-        multiline
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Skills"
-        value={editedSkills}
-        onChangeText={setEditedSkills}
-        multiline
-      />
-      <Button mode="outlined" onPress={pickImage}>
-        Pick a Profile Photo
-      </Button>
-      {editedProfilePhoto ? (
-        <Image source={{uri: editedProfilePhoto}} style={styles.profilePhoto} />
-      ) : null}
-      <Button mode="contained" onPress={saveChanges}>
-        Save Changes
-      </Button>
-    </ScrollView>
-  );
-};
-
-const Stack = createStackNavigator();
-
-const App = () => {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="EditResume" component={EditResumeScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
   );
 };
 
@@ -506,4 +359,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export default AddedResume;
