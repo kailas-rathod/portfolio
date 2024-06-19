@@ -1,63 +1,110 @@
 // screens/HomeScreen.tsx
 
 import React, {useState, useEffect} from 'react';
-import {
-  ScrollView,
-  TextInput,
-  Image,
-  FlatList,
-  StyleSheet,
-  View,
-  Alert,
-} from 'react-native';
-import {Button, Text, Avatar, Card, Title, Paragraph} from 'react-native-paper';
+import {ScrollView, Image, View, Alert, StyleSheet} from 'react-native';
+import {Button} from 'react-native-paper';
 import Realm from 'realm';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {useNavigation} from '@react-navigation/native';
+import CustomTextInput from '../../components/components/CustomTextInput';
+import Template from '../../components/components/Template';
 
-// Realm schema definitions (same as in App.tsx)
+// Realm schema definitions
+const ResumeSchema = {
+  name: 'Resume',
+  primaryKey: '_id',
+  properties: {
+    _id: 'objectId',
+    name: 'string',
+    email: 'string',
+    phone: 'string',
+    profilePhoto: 'string',
+    summary: 'string',
+    skills: 'string',
+    experience: {type: 'list', objectType: 'Experience'},
+    education: {type: 'list', objectType: 'Education'},
+    certifications: {type: 'list', objectType: 'Certification'},
+    templateId: 'int',
+  },
+};
 
-const HomeScreen = () => {
-  const navigation = useNavigation();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState('');
-  const [summary, setSummary] = useState('');
-  const [skills, setSkills] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+const ExperienceSchema = {
+  name: 'Experience',
+  properties: {
+    _id: 'objectId',
+    company: 'string',
+    role: 'string',
+    startDate: 'date',
+    endDate: 'date',
+  },
+};
+
+const EducationSchema = {
+  name: 'Education',
+  properties: {
+    _id: 'objectId',
+    institution: 'string',
+    degree: 'string',
+    location: 'string',
+    graduationDate: 'date',
+  },
+};
+
+const CertificationSchema = {
+  name: 'Certification',
+  properties: {
+    _id: 'objectId',
+    name: 'string',
+    institution: 'string',
+    date: 'date',
+  },
+};
+
+// Initialize Realm instance
+const realm = new Realm({
+  schema: [
+    ResumeSchema,
+    ExperienceSchema,
+    EducationSchema,
+    CertificationSchema,
+  ],
+  schemaVersion: 1,
+});
+
+const HomeScreen: React.FC = () => {
+  const [resumeData, setResumeData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    profilePhoto: '',
+    summary: '',
+    skills: '',
+    selectedTemplate: null,
+  });
   const [resumes, setResumes] = useState<Realm.Results<any>>();
+  const [loading, setLoading] = useState(true);
 
-  // Fetch resumes from Realm on component mount
   useEffect(() => {
-    const allResumes = realm.objects('Resume');
-    setResumes(allResumes);
+    fetchResumes();
   }, []);
 
-  const addOrUpdateResume = () => {
-    if (selectedResumeId) {
-      // Update existing resume
-      updateResume(selectedResumeId);
-    } else {
-      // Add new resume
-      addResume();
-    }
+  const fetchResumes = () => {
+    const allResumes = realm.objects('Resume');
+    setResumes(allResumes);
+    setLoading(false);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setResumeData({...resumeData, [field]: value});
   };
 
   const addResume = () => {
     realm.write(() => {
       realm.create('Resume', {
         _id: new Realm.BSON.ObjectId(),
-        name,
-        email,
-        phone,
-        profilePhoto,
-        summary,
-        skills,
+        ...resumeData,
         experience: [],
         education: [],
         certifications: [],
-        templateId: selectedTemplate || 1,
+        templateId: resumeData.selectedTemplate || 1,
       });
     });
 
@@ -65,40 +112,16 @@ const HomeScreen = () => {
     fetchResumes();
   };
 
-  const updateResume = (resumeId: string) => {
-    const existingResume = realm.objectForPrimaryKey('Resume', resumeId);
-
-    if (existingResume) {
-      realm.write(() => {
-        existingResume.name = name;
-        existingResume.email = email;
-        existingResume.phone = phone;
-        existingResume.profilePhoto = profilePhoto;
-        existingResume.summary = summary;
-        existingResume.skills = skills;
-        existingResume.templateId = selectedTemplate || 1;
-      });
-
-      clearFields();
-      fetchResumes();
-    } else {
-      Alert.alert('Error', 'Resume not found for editing.');
-    }
-  };
-
   const clearFields = () => {
-    setName('');
-    setEmail('');
-    setPhone('');
-    setProfilePhoto('');
-    setSummary('');
-    setSkills('');
-    setSelectedTemplate(null);
-  };
-
-  const fetchResumes = () => {
-    const allResumes = realm.objects('Resume');
-    setResumes(allResumes);
+    setResumeData({
+      name: '',
+      email: '',
+      phone: '',
+      profilePhoto: '',
+      summary: '',
+      skills: '',
+      selectedTemplate: null,
+    });
   };
 
   const deleteResume = (resume: any) => {
@@ -123,134 +146,86 @@ const HomeScreen = () => {
   };
 
   const editResume = (resume: any) => {
-    navigation.navigate('EditResume', {resume});
+    // Navigate to edit screen
   };
 
   const pickImage = async () => {
-    let result = await launchImageLibrary({
-      mediaType: 'photo',
-      includeBase64: true,
-    });
-
-    if (!result.didCancel && result.assets && result.assets[0].uri) {
-      setProfilePhoto(result.assets[0].uri);
-    }
+    // Implement pick image logic
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Input fields and buttons */}
-      <TextInput
-        style={styles.input}
-        placeholder="kailas"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone"
-        value={phone}
-        onChangeText={setPhone}
-      />
+    <ScrollView style={screenStyles.container}>
+      {['name', 'email', 'phone', 'summary', 'skills'].map(field => (
+        <CustomTextInput
+          key={field}
+          placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+          value={resumeData[field]}
+          onChangeText={value => handleInputChange(field, value)}
+          multiline={field === 'summary' || field === 'skills'}
+        />
+      ))}
       <Button mode="outlined" onPress={pickImage}>
-        Pick Profile Photo
+        Pick a Profile Photo
       </Button>
-      {profilePhoto ? (
-        <Image source={{uri: profilePhoto}} style={styles.profileImage} />
+      {resumeData.profilePhoto ? (
+        <Image
+          source={{uri: resumeData.profilePhoto}}
+          style={screenStyles.profilePhoto}
+        />
       ) : null}
-      <TextInput
-        style={styles.input}
-        placeholder="Summary"
-        value={summary}
-        onChangeText={setSummary}
-        multiline
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Skills"
-        value={skills}
-        onChangeText={setSkills}
-        multiline
-      />
-      <Text>Select Template:</Text>
-      <View style={styles.templateContainer}>
-        <Button
-          mode={selectedTemplate === 1 ? 'contained' : 'outlined'}
-          onPress={() => setSelectedTemplate(1)}
-          style={styles.templateButton}>
-          Template 1
-        </Button>
-        <Button
-          mode={selectedTemplate === 2 ? 'contained' : 'outlined'}
-          onPress={() => setSelectedTemplate(2)}
-          style={styles.templateButton}>
-          Template 2
-        </Button>
+      <View style={screenStyles.templateSelection}>
+        {[1, 2].map(templateId => (
+          <Button
+            key={templateId}
+            style={screenStyles.templateButton}
+            mode="contained"
+            onPress={() =>
+              setResumeData({...resumeData, selectedTemplate: templateId})
+            }
+            disabled={resumeData.selectedTemplate === templateId}>
+            Template {templateId}
+          </Button>
+        ))}
       </View>
       <Button
         mode="contained"
-        onPress={addOrUpdateResume}
-        disabled={!name || !email || !phone || !selectedTemplate}>
-        {selectedResumeId ? 'Update Resume' : 'Add Resume'}
+        onPress={addResume}
+        disabled={!resumeData.selectedTemplate}>
+        Add Resume
       </Button>
 
-      {/* Display resumes */}
-      <Text style={styles.sectionTitle}>Resumes</Text>
-      {resumes && resumes.length > 0 ? (
-        resumes.map((resume: any) => (
-          <View key={resume._id.toString()}>
-            {resume.templateId === 1 ? (
-              <Template1 resume={resume} />
-            ) : (
-              <Template2 resume={resume} />
-            )}
-          </View>
-        ))
-      ) : (
-        <Text>No resumes found.</Text>
-      )}
+      {!loading &&
+        resumes?.map(resume => (
+          <Template
+            key={resume._id.toString()}
+            resume={resume}
+            deleteResume={deleteResume}
+            editResume={editResume}
+          />
+        ))}
     </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
+const screenStyles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 20,
   },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
+  profilePhoto: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
     marginBottom: 10,
-    paddingHorizontal: 10,
+    borderRadius: 50,
   },
-  profileImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-    marginBottom: 10,
-  },
-  templateContainer: {
+  templateSelection: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   templateButton: {
     flex: 1,
-    marginHorizontal: 5,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
+    margin: 5,
   },
 });
 
