@@ -1,3 +1,296 @@
+// import React, {useState, useEffect} from 'react';
+// import {ScrollView, StyleSheet, Image, View, Text, Alert} from 'react-native';
+// import {
+//   NavigationContainer,
+//   useNavigation,
+//   useRoute,
+// } from '@react-navigation/native';
+// import {createStackNavigator} from '@react-navigation/stack';
+// import Realm from 'realm';
+// import {launchImageLibrary} from 'react-native-image-picker';
+// import {
+//   Card,
+//   Avatar,
+//   Title,
+//   TextInput,
+//   Paragraph,
+//   Button,
+// } from 'react-native-paper';
+
+// // Realm Schemas
+// const ResumeSchema = {
+//   name: 'Resume',
+//   primaryKey: '_id',
+//   properties: {
+//     _id: 'objectId',
+//     name: 'string',
+//     email: 'string',
+//     phone: 'string',
+//     profilePhoto: 'string',
+//     summary: 'string',
+//     skills: 'string',
+//     experience: {type: 'list', objectType: 'Experience'},
+//     education: {type: 'list', objectType: 'Education'},
+//     certifications: {type: 'list', objectType: 'Certification'},
+//     templateId: 'int',
+//   },
+// };
+
+// const ExperienceSchema = {
+//   name: 'Experience',
+//   properties: {
+//     _id: 'objectId',
+//     company: 'string',
+//     role: 'string',
+//     startDate: 'date',
+//     endDate: 'date',
+//   },
+// };
+
+// const EducationSchema = {
+//   name: 'Education',
+//   properties: {
+//     _id: 'objectId',
+//     institution: 'string',
+//     degree: 'string',
+//     location: 'string',
+//     graduationDate: 'date',
+//   },
+// };
+
+// const CertificationSchema = {
+//   name: 'Certification',
+//   properties: {
+//     _id: 'objectId',
+//     name: 'string',
+//     institution: 'string',
+//     date: 'date',
+//   },
+// };
+
+// // Realm instance
+// const realm = new Realm({
+//   schema: [
+//     ResumeSchema,
+//     ExperienceSchema,
+//     EducationSchema,
+//     CertificationSchema,
+//   ],
+//   schemaVersion: 1,
+// });
+
+// // HomeScreen component
+// const HomeScreen: React.FC = () => {
+//   const navigation = useNavigation();
+//   const [resumes, setResumes] = useState([]);
+
+//   useEffect(() => {
+//     fetchResumes();
+//   }, []);
+
+//   const fetchResumes = () => {
+//     const allResumes = realm.objects('Resume');
+//     setResumes(allResumes);
+//   };
+
+//   const handleAddResume = () => {
+//     navigation.navigate('AddResume');
+//   };
+
+//   const handleEditResume = (resumeId: string) => {
+//     navigation.navigate('EditResume', {resumeId});
+//   };
+
+//   const handleDeleteResume = (resume: any) => {
+//     Alert.alert(
+//       'Delete Resume',
+//       'Are you sure you want to delete this resume?',
+//       [
+//         {
+//           text: 'Cancel',
+//           style: 'cancel',
+//         },
+//         {
+//           text: 'Delete',
+//           onPress: () => {
+//             realm.write(() => {
+//               realm.delete(resume);
+//             });
+//             fetchResumes();
+//           },
+//         },
+//       ],
+//       {cancelable: true},
+//     );
+//   };
+
+//   const renderResumes = () => {
+//     return resumes.map((resume: any) => (
+//       <Card key={resume._id} style={styles.card}>
+//         <Card.Content>
+//           <View style={styles.row}>
+//             <Avatar.Image size={80} source={{uri: resume.profilePhoto}} />
+//             <View style={styles.details}>
+//               <Title>{resume.name}</Title>
+//               <Paragraph>{resume.email}</Paragraph>
+//               <Paragraph>{resume.phone}</Paragraph>
+//               <Paragraph>{resume.summary}</Paragraph>
+//               <Paragraph>{resume.skills}</Paragraph>
+//             </View>
+//           </View>
+//           {/* Render experience, education, certifications */}
+//         </Card.Content>
+//         <Card.Actions>
+//           <Button onPress={() => handleDeleteResume(resume)}>Delete</Button>
+//           <Button onPress={() => handleEditResume(resume._id)}>Edit</Button>
+//         </Card.Actions>
+//       </Card>
+//     ));
+//   };
+
+//   return (
+//     <ScrollView style={styles.container}>
+//       {renderResumes()}
+//       <Button
+//         mode="contained"
+//         onPress={handleAddResume}
+//         style={styles.addButton}>
+//         Add Resume
+//       </Button>
+//     </ScrollView>
+//   );
+// };
+
+// // EditResumeScreen component
+// const EditResumeScreen: React.FC = () => {
+//   const navigation = useNavigation();
+//   const route = useRoute();
+//   const {resumeId} = route.params as {resumeId: string};
+//   const [editedResume, setEditedResume] = useState<any>(null);
+
+//   useEffect(() => {
+//     const resume = realm.objectForPrimaryKey(
+//       'Resume',
+//       new Realm.BSON.ObjectId(resumeId),
+//     );
+//     setEditedResume(resume);
+//   }, [resumeId]);
+
+//   const handleInputChange = (field: string, value: string) => {
+//     setEditedResume({...editedResume, [field]: value});
+//   };
+
+//   const saveChanges = () => {
+//     realm.write(() => {
+//       editedResume.name = editedResume.name;
+//       editedResume.email = editedResume.email;
+//       editedResume.phone = editedResume.phone;
+//       editedResume.profilePhoto = editedResume.profilePhoto;
+//       editedResume.summary = editedResume.summary;
+//       editedResume.skills = editedResume.skills;
+//     });
+//     navigation.goBack();
+//   };
+
+//   const pickImage = () => {
+//     launchImageLibrary({mediaType: 'photo'}, response => {
+//       if (response.assets && response.assets.length > 0) {
+//         setEditedResume({
+//           ...editedResume,
+//           profilePhoto: response.assets[0].uri,
+//         });
+//       }
+//     });
+//   };
+
+//   if (!editedResume) return null;
+
+//   return (
+//     <ScrollView style={styles.container}>
+//       <TextInput
+//         label="Name"
+//         value={editedResume.name}
+//         onChangeText={text => handleInputChange('name', text)}
+//       />
+//       <TextInput
+//         label="Email"
+//         value={editedResume.email}
+//         onChangeText={text => handleInputChange('email', text)}
+//       />
+//       <TextInput
+//         label="Phone"
+//         value={editedResume.phone}
+//         onChangeText={text => handleInputChange('phone', text)}
+//       />
+//       <TextInput
+//         label="Summary"
+//         value={editedResume.summary}
+//         onChangeText={text => handleInputChange('summary', text)}
+//         multiline
+//       />
+//       <TextInput
+//         label="Skills"
+//         value={editedResume.skills}
+//         onChangeText={text => handleInputChange('skills', text)}
+//         multiline
+//       />
+//       <Button onPress={pickImage}>Pick Profile Photo</Button>
+//       {editedResume.profilePhoto && (
+//         <Image source={{uri: editedResume.profilePhoto}} style={styles.image} />
+//       )}
+//       <Button mode="contained" onPress={saveChanges} style={styles.saveButton}>
+//         Save Changes
+//       </Button>
+//     </ScrollView>
+//   );
+// };
+
+// // Navigation Stack
+// const Stack = createStackNavigator();
+
+// const App: React.FC = () => {
+//   return (
+//     <NavigationContainer>
+//       <Stack.Navigator initialRouteName="Home">
+//         <Stack.Screen name="Home" component={HomeScreen} />
+//         <Stack.Screen name="EditResume" component={EditResumeScreen} />
+//       </Stack.Navigator>
+//     </NavigationContainer>
+//   );
+// };
+
+// // Styles
+// const styles = StyleSheet.create({
+//   container: {
+//     padding: 20,
+//   },
+//   card: {
+//     marginVertical: 10,
+//     elevation: 3,
+//   },
+//   row: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 10,
+//   },
+//   details: {
+//     marginLeft: 10,
+//     flex: 1,
+//   },
+//   addButton: {
+//     marginTop: 10,
+//   },
+//   image: {
+//     width: 100,
+//     height: 100,
+//     marginVertical: 10,
+//   },
+//   saveButton: {
+//     marginTop: 10,
+//   },
+// });
+
+// export default App;
 import React, {useState, useEffect} from 'react';
 import {ScrollView, StyleSheet, Image, View, Text, Alert} from 'react-native';
 import {
@@ -89,11 +382,10 @@ const CustomTextInput: React.FC<{
   <View style={styles.inputContainer}>
     <TextInput
       label={label}
-      mode="outlined"
       value={value}
       onChangeText={onChangeText}
       multiline={multiline}
-      // style={[styles.input, multiline && styles.multiline]}
+      style={[styles.input, multiline && styles.multiline]}
     />
   </View>
 );
@@ -265,19 +557,17 @@ const HomeScreen: React.FC = () => {
         onChangeText={setSkills}
         multiline
       />
-      <Button mode="contained" onPress={pickImage}>
-        Pick Profile Photo
-      </Button>
+      <Button onPress={pickImage}>Pick Profile Photo</Button>
       {profilePhoto ? (
         <Image source={{uri: profilePhoto}} style={styles.image} />
       ) : null}
-      <Text>Select Template:</Text>
       <View style={styles.templateContainer}>
+        <Text>Select Template:</Text>
         {[1, 2, 3].map(templateId => (
           <Button
             key={templateId}
             onPress={() => setSelectedTemplate(templateId)}
-            mode="outlined"
+            mode="contained"
             style={[
               styles.templateButton,
               selectedTemplate === templateId && styles.selectedTemplateButton,

@@ -1,5 +1,13 @@
 import React, {useState, useEffect} from 'react';
-import {ScrollView, StyleSheet, Image, View, Text, Alert} from 'react-native';
+import {
+  ScrollView,
+  Button,
+  StyleSheet,
+  Image,
+  View,
+  Text,
+  Alert,
+} from 'react-native';
 import {
   NavigationContainer,
   useNavigation,
@@ -8,14 +16,7 @@ import {
 import {createStackNavigator} from '@react-navigation/stack';
 import Realm from 'realm';
 import {launchImageLibrary} from 'react-native-image-picker';
-import {
-  Card,
-  Avatar,
-  Title,
-  TextInput,
-  Paragraph,
-  Button,
-} from 'react-native-paper';
+import {Card, Avatar, Title, TextInput, Paragraph} from 'react-native-paper';
 
 // Realm Schemas
 const ResumeSchema = {
@@ -81,19 +82,18 @@ const realm = new Realm({
 
 // Custom Components
 const CustomTextInput: React.FC<{
-  label: string;
+  placeholder?: string;
   value: string;
   onChangeText: (text: string) => void;
   multiline?: boolean;
-}> = ({label, value, onChangeText, multiline}) => (
+}> = ({placeholder, value, onChangeText, multiline}) => (
   <View style={styles.inputContainer}>
     <TextInput
-      label={label}
-      mode="outlined"
+      style={[styles.input, multiline && styles.multiline]}
+      placeholder={placeholder}
       value={value}
       onChangeText={onChangeText}
       multiline={multiline}
-      // style={[styles.input, multiline && styles.multiline]}
     />
   </View>
 );
@@ -155,8 +155,8 @@ const Template: React.FC<TemplateProps> = ({resume, onDelete, onEdit}) => (
       </View>
     </Card.Content>
     <Card.Actions>
-      <Button onPress={() => onDelete(resume)}>Delete</Button>
-      <Button onPress={() => onEdit(resume)}>Edit</Button>
+      <Button title="Delete" onPress={() => onDelete(resume)} />
+      <Button title="Edit" onPress={() => onEdit(resume)} />
     </Card.Actions>
   </Card>
 );
@@ -171,7 +171,7 @@ const HomeScreen: React.FC = () => {
   const [summary, setSummary] = useState('');
   const [skills, setSkills] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(1);
-  const [resumes, setResumes] = useState<any[]>([]);
+  const [resumes, setResumes] = useState<Realm.Results<any>>();
 
   useEffect(() => {
     fetchResumes();
@@ -179,7 +179,7 @@ const HomeScreen: React.FC = () => {
 
   const fetchResumes = () => {
     const allResumes = realm.objects('Resume');
-    setResumes(Array.from(allResumes));
+    setResumes(allResumes);
   };
 
   const addResume = () => {
@@ -237,7 +237,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const editResume = (resume: any) => {
-    navigation.navigate('EditResume', {resumeId: resume._id.toString()});
+    navigation.navigate('EditResume', {resumeId: resume._id});
   };
 
   const pickImage = () => {
@@ -250,52 +250,52 @@ const HomeScreen: React.FC = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <CustomTextInput label="Name" value={name} onChangeText={setName} />
-      <CustomTextInput label="Email" value={email} onChangeText={setEmail} />
-      <CustomTextInput label="Phone" value={phone} onChangeText={setPhone} />
+      <CustomTextInput placeholder="Name" value={name} onChangeText={setName} />
       <CustomTextInput
-        label="Summary"
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <CustomTextInput
+        placeholder="Phone"
+        value={phone}
+        onChangeText={setPhone}
+      />
+      <CustomTextInput
+        placeholder="Summary"
         value={summary}
         onChangeText={setSummary}
         multiline
       />
       <CustomTextInput
-        label="Skills"
+        placeholder="Skills"
         value={skills}
         onChangeText={setSkills}
         multiline
       />
-      <Button mode="contained" onPress={pickImage}>
-        Pick Profile Photo
-      </Button>
+      <Button title="Pick Profile Photo" onPress={pickImage} />
       {profilePhoto ? (
         <Image source={{uri: profilePhoto}} style={styles.image} />
       ) : null}
-      <Text>Select Template:</Text>
       <View style={styles.templateContainer}>
+        <Text>Select Template:</Text>
         {[1, 2, 3].map(templateId => (
           <Button
             key={templateId}
+            title={`Template ${templateId}`}
             onPress={() => setSelectedTemplate(templateId)}
-            mode="outlined"
-            style={[
-              styles.templateButton,
-              selectedTemplate === templateId && styles.selectedTemplateButton,
-            ]}>
-            Template {templateId}
-          </Button>
+            color={selectedTemplate === templateId ? 'blue' : 'gray'}
+          />
         ))}
       </View>
       <Button
+        title="Add Resume"
         onPress={addResume}
         disabled={!selectedTemplate}
-        mode="contained"
-        style={styles.addButton}>
-        Add Resume
-      </Button>
-      {resumes.map(resume => (
+      />
+      {resumes?.map((resume: any) => (
         <Template
-          key={resume._id.toString()}
+          key={resume._id}
           resume={resume}
           onDelete={deleteResume}
           onEdit={editResume}
@@ -351,47 +351,45 @@ const EditResumeScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <CustomTextInput
-        label="Name"
+        placeholder="Name"
         value={editedResume.name}
-        onChangeText={text => handleInputChange('name', text)}
+        onChangeText={value => handleInputChange('name', value)}
       />
       <CustomTextInput
-        label="Email"
+        placeholder="Email"
         value={editedResume.email}
-        onChangeText={text => handleInputChange('email', text)}
+        onChangeText={value => handleInputChange('email', value)}
       />
       <CustomTextInput
-        label="Phone"
+        placeholder="Phone"
         value={editedResume.phone}
-        onChangeText={text => handleInputChange('phone', text)}
+        onChangeText={value => handleInputChange('phone', value)}
       />
       <CustomTextInput
-        label="Summary"
+        placeholder="Summary"
         value={editedResume.summary}
-        onChangeText={text => handleInputChange('summary', text)}
+        onChangeText={value => handleInputChange('summary', value)}
         multiline
       />
       <CustomTextInput
-        label="Skills"
+        placeholder="Skills"
         value={editedResume.skills}
-        onChangeText={text => handleInputChange('skills', text)}
+        onChangeText={value => handleInputChange('skills', value)}
         multiline
       />
-      <Button onPress={pickImage}>Pick Profile Photo</Button>
-      {editedResume.profilePhoto && (
+      <Button title="Pick Profile Photo" onPress={pickImage} />
+      {editedResume.profilePhoto ? (
         <Image source={{uri: editedResume.profilePhoto}} style={styles.image} />
-      )}
-      <Button mode="contained" onPress={saveChanges} style={styles.saveButton}>
-        Save Changes
-      </Button>
+      ) : null}
+      <Button title="Save Changes" onPress={saveChanges} />
     </ScrollView>
   );
 };
 
-// Navigation
+// Navigation Stack
 const Stack = createStackNavigator();
 
-const App: React.FC = () => {
+const Demo: React.FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
@@ -407,6 +405,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  image: {
+    width: 100,
+    height: 100,
+    marginVertical: 10,
+  },
+  templateContainer: {
+    marginVertical: 10,
+  },
   card: {
     marginVertical: 10,
     elevation: 3,
@@ -421,47 +427,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: 20,
+    marginBottom: 15,
   },
   item: {
-    marginBottom: 10,
+    marginBottom: 5,
   },
   inputContainer: {
     marginBottom: 10,
   },
   input: {
-    backgroundColor: '#e0e0e0',
     height: 40,
-    padding: 10,
+    borderColor: 'gray',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
   multiline: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  addButton: {
-    marginTop: 10,
-  },
-  image: {
-    width: 100,
     height: 100,
-    marginVertical: 10,
-  },
-  saveButton: {
-    marginTop: 10,
-  },
-  templateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  templateButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  selectedTemplateButton: {
-    backgroundColor: '#2196F3',
+    textAlignVertical: 'top',
+    paddingTop: 10,
   },
 });
 
-export default App;
+export default Demo;
